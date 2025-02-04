@@ -4,6 +4,11 @@
 
   <div class="course-list">
     <h1>Our courses</h1>
+    <form method="get">
+        {{ form.as_p }}
+        <button type="submit">Фільтрувати</button>
+    </form>
+
     <table>
       <thead>
         <tr>
@@ -11,6 +16,7 @@
           <th>Course</th>
           <th>About course</th>
           <th>Teacher</th>
+          <th>Students</th>
         </tr>
       </thead>
       <tbody>
@@ -20,10 +26,13 @@
           <td><a href="/courses/{{ course.id }}">{{ course.name }}</a></td>
           <td>{{ course.description }}</td>
           <td>{{ course.teacher.first_name }} {{ course.teacher.last_name }}</td>
+          <td>
+            <a href="{% url 'course_students_list' course.id %}">View students</a>
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4">Any courses yet</td>
+          <td colspan="5">Any courses yet</td>
         </tr>
         {% endfor %}
       </tbody>
