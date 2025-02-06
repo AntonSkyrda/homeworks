@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from courses.models import Course
-
+from task_manager.tasks import send_new_task_notification, send_task_review_notification
 
 User = get_user_model()
 
@@ -16,6 +16,14 @@ class Task(models.Model):
     def __str__(self):
         return self.description
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        for student in self.course.student.all():
+            send_new_task_notification.delay(
+                student.email, self.description, self.course.name
+            )
+
 
 class TaskAnswer(models.Model):
     description = models.TextField(_("Answer description"))
@@ -25,6 +33,14 @@ class TaskAnswer(models.Model):
 
     def __str__(self):
         return self.description
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.mark is not None:
+            send_task_review_notification.delay(
+                self.student.email, self.task.description, self.mark
+            )
 
 
 class TaskMark(models.Model):
