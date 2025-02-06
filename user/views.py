@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LogoutView, LoginView
+from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import FormView, ListView, DetailView
@@ -9,7 +10,8 @@ from django.views.generic import FormView, ListView, DetailView
 from courses.models import Course
 from tasks.models import Task, TaskAnswer
 from tasks.forms import TaskAnswerForm
-from .forms import LoginForm, UserCreateForm
+from .forms import UserCreateForm
+from task_manager.tasks import send_registration_email
 
 
 class UserLoginView(LoginView):
@@ -32,7 +34,19 @@ class RegisterView(FormView):
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
+
+        send_registration_email.delay(user.email, "some-generated-token")
+
         return super().form_valid(form)
+
+    def post(self, request, *args, **kwargs):
+        email = EmailMultiAlternatives(
+            subject="Registration",
+            body="Thank you for registering",
+            to=[self.request.user.email],
+        )
+
+        email.send()
 
 
 class UserDashboardView(LoginRequiredMixin, ListView):

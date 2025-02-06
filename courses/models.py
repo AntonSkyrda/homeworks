@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models import Sum, OuterRef, Subquery
 from django.utils.translation import gettext_lazy as _
 
+from task_manager.tasks import send_course_start_notification
 
 from tasks.models import TaskMark
 
@@ -38,3 +39,12 @@ class Course(models.Model):
         )
 
         return students
+
+    def save(self, *args, **kwargs):
+        if self.start_date:
+            for student in self.student.all():
+                send_course_start_notification.delay(
+                    student.email, self.name, str(self.start_date)
+                )
+
+        super().save(*args, **kwargs)
