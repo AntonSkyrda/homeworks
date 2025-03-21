@@ -1,57 +1,57 @@
-from datetime import datetime
-import random
 import string
+import random
+from datetime import datetime
 
-from flask import Flask, request
+import uvicorn
+from fastapi import FastAPI, Request, Query, HTTPException
+
+app = FastAPI()
 
 
-app = Flask(__name__)
-
-
-@app.route("/whoami")
-def whoami():
-    client_browser = request.user_agent.string
-    client_ip = request.remote_addr
+@app.get("/whoami")
+async def whoami(request: Request):
+    user_agent = request.headers.get("user-agent")
+    user_ip = request.client.host
     current_time = datetime.now()
 
     return {
-        "browser": client_browser,
-        "ip": client_ip,
-        "server_time": current_time,
+        "User-Agent": user_agent,
+        "User-IP": user_ip,
+        "Time": current_time,
     }
 
 
-@app.route("/source_code")
-def source_code():
+@app.get("/source_code")
+async def source_code():
     with open(__file__, "r") as f:
         code = f.read()
 
-    return f"<pre>{code}</pre>"
+    return code
 
 
-@app.route("/random")
-def random_string():
-    try:
-        length = int(request.args.get("length", 8))
-        specials = int(request.args.get("special", 0))
-        digits = int(request.args.get("digits", 0))
+@app.get("/random")
+async def get_random_string(
+    length: int = Query(8, ge=1, le=100),
+    specials: int = Query(0, ge=0, le=1),
+    digits: int = Query(0, ge=0, le=1),
+):
+    if specials not in (0, 1) or digits not in (0, 1):
+        raise HTTPException(
+            status_code=400, detail="specials and digits must be 0 or 1"
+        )
 
-        if length < 1 or length > 100:
-            return {
-                "error": "Length must be between 1 and 100",
-            }, 400
-        if specials not in (0, 1) or digits not in (0, 1):
-            return {"error": "Specials and Digits must be 0 or 1"}, 400
+    chars = list(string.ascii_letters)
+    if specials:
+        chars.extend('!"№;%:?*()_+')
+    if digits:
+        chars.extend(string.digits)
 
-        characters = string.ascii_letters
-        if digits:
-            characters += string.digits
-        if specials:
-            characters += '!"№;%:?*()_+'
+    if not chars:
+        raise HTTPException(status_code=400, detail="No characters to generate from")
 
-        result = "".join(random.choices(characters, k=length))
+    result = "".join(random.choice(chars) for _ in range(length))
+    return {"result": result}
 
-        return {"random_string": result}
 
-    except ValueError:
-        return {"error": "Invalid input"}, 400
+if __name__ == "__main__":
+    uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)

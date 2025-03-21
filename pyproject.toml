@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "homeworks"
+name = "fast-api"
 version = "0.1.0"
 description = ""
 authors = ["AntonSkyrda <mr.skyrda@gmail.com>"]
@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-flask = "^3.1.0"
+fastapi = {extras = ["standard"], version = "^0.115.11"}
 
 
 [build-system]
